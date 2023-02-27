@@ -743,7 +743,7 @@ class BaseVisitor(ast.NodeVisitor):
     op_symbol = ast_constants.NODE_TYPE_TO_TOKENS[type(node.op)][0]
     self.visit(node.left)
     self.attr(node, 'op', [self.ws, op_symbol, self.ws],
-              default=' %s ' % op_symbol, deps=('op',))
+              default='%s' % op_symbol, deps=('op',))
     self.visit(node.right)
 
   @expression
