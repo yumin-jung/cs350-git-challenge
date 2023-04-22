@@ -1,10 +1,24 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # coding=utf-8
 """Token generator for analyzing source code in logical units.
 
 This module contains the TokenGenerator used for annotating a parsed syntax tree
 with source code formatting.
 """
-# Copyright 2017 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -375,9 +389,54 @@ class TokenGenerator(object):
       val_idx = 0
       i = -1
       result = ''
+      in_fstring = False
+      string_quote = None
       while i < len(str_content) - 1:
         i, c = next(indexed_chars)
         result += c
+
+        # If we haven't actually parsing string content yet, check if a string
+        # (with or without fstring prefix) has started
+        if string_quote is None:
+          if str_content[i:i+4] in ('f"""', "f'''"):
+            string_quote = str_content[i+1:i+4]
+            in_fstring = True
+          elif str_content[i:i+3] in ('"""', "'''"):
+            string_quote = str_content[i:i+3]
+            in_fstring = False
+          elif str_content[i:+2] in ('f"', "f'"):
+            string_quote = str_content[i+1]
+            in_fstring = True
+          elif c in ('"', "'"):
+            string_quote = c
+            in_fstring = False
+          if string_quote:
+            # Skip uneaten quote characters
+            for _ in range(len(string_quote) + (1 if in_fstring else 0) - 1):
+              i, c = next(indexed_chars)
+              result += c
+            continue
+
+        # If we are still not parsing characters in a string, no extra
+        # processing is needed
+        if string_quote is None:
+          continue
+
+        # If we ARE in a string, check if the next characters are the
+        # close-quote for that string
+        if (str_content[i:i+len(string_quote)] == string_quote and
+            str_content[i-1] != '\\'):
+          # Skip uneaten quote characters
+          for _ in range(len(string_quote) - 1):
+            i, c = next(indexed_chars)
+            result += c
+          string_quote = None
+          in_fstring = False
+          continue
+
+        # If we are NOT in an fstring, skip all FormattedValue processing.
+        if not in_fstring:
+          continue
 
         # When an open bracket is encountered, start parsing a subexpression
         if c == '{':

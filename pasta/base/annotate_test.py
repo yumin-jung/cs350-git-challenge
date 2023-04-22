@@ -1,6 +1,6 @@
 # coding=utf-8
 """Tests for annotate."""
-# Copyright 2017 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -247,7 +247,7 @@ class IndentationTest(test_utils.TestCase):
             new_node
         ''')
     t = pasta.parse(src)
-    # Repace the second node and make sure the indent level is corrected
+    # Replace the second node and make sure the indent level is corrected
     t.body[0].body[1] = ast.Expr(ast.Name(id='new_node'))
     self.assertMultiLineEqual(expected, codegen.to_str(t))
 
